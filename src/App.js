@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-// import io from 'socket.io-client'
+import io from 'socket.io-client'
 
 class App extends Component {
   constructor(props) {
@@ -10,38 +10,42 @@ class App extends Component {
     this.localVideoref = React.createRef()
     this.remoteVideoref = React.createRef()
 
-    // this.socket = null
+    this.socket = null
     this.candidates = []
   }
 
   componentDidMount = () => {
 
-    console.log('Mounted');
+    this.socket = io(
+      '/webrtcPeer',   // namespace
+      {
+        path: '/webrtc',
+        query: {}
+      }
+    )
 
-    // this.socket = io(
-    //   '/webrtcPeer',   // namespace
-    //   {
-    //     path: '/webrtc',
-    //     query: {}
-    //   }
-    // )
+    this.socket.on('log', function(array) {
+      console.log.apply(console, array);
+    });
 
-    // this.socket.on('connection-success', success => {
-    //   console.log(success)
-    // })
+    this.socket.on('connection-success', success => {
+      console.log(success)
+    })
 
-    // this.socket.on('offerOrAnswer', (sdp) => {
-    //   this.textref.value = JSON.stringify(sdp)
+    this.socket.on('offerOrAnswer', (sdp) => {
+      this.textref.value = JSON.stringify(sdp)
 
-    //   // set sdp as remote description
-    //   this.pc.setRemoteDescription(new RTCSessionDescription(sdp))
-    // })
+      // set sdp as remote description
+      console.log('sdp is received and set to pc-RemoteDescription')
+      this.pc.setRemoteDescription(new RTCSessionDescription(sdp))
+    })
 
-    // this.socket.on('candidate', (candidate) => {
-    //   // console.log('From Peer... ', JSON.stringify(candidate))
-    //   // this.candidates = [...this.candidates, candidate]
-    //   this.pc.addIceCandidate(new RTCIceCandidate(candidate))
-    // })
+    this.socket.on('candidate', (candidate) => {
+      // console.log('From Peer... ', JSON.stringify(candidate))
+      // this.candidates = [...this.candidates, candidate]
+      console.log('candidate is received and added to pc-IceCandidate')
+      this.pc.addIceCandidate(new RTCIceCandidate(candidate))
+    })
 
     const pc_config = null
 
@@ -64,28 +68,23 @@ class App extends Component {
 
     // triggered when a new candidate is returned
     this.pc.onicecandidate = (e) => {
+      console.log(" A new candidate is triggered and returned to Client Handler [this.pc.onicecandidate(e)] : ")
       // send the candidates to the remote peer
       // see addCandidate below to be triggered on the remote peer
       if (e.candidate) {
-        console.log(JSON.stringify(e.candidate))
-        // this.sendToPeer('candidate', e.candidate)
+        //console.log(JSON.stringify(e.candidate))
+        this.sendToPeer('candidate', e.candidate)
       }
     }
 
     // triggered when there is a change in connection state
     this.pc.oniceconnectionstatechange = (e) => {
-      console.log(e)
+      console.log(" A change in connection state is triggered and returned to Client Handler [this.pc.oniceconnectionstatechange(e)] : ")
     }
 
     // triggered when a stream is added to pc, see below - this.pc.addStream(stream)
-    // this.pc.ontrack을 사용하면 remote stream이 나오지 않는다.
-    // ontrack과 onaddstream의 차이는 무엇인가?
-    // this.pc.ontrack = (e) => {
-    //   this.remoteVideoref.current.srcObject = e.stream;
-    // }
-
-    // triggered when a stream is added to pc, see below - this.pc.addStream(stream)
     this.pc.onaddstream = (e) => {
+      console.log(" A stream is added(triggered) to peer connection and returned to Client Handler [this.pc.onaddstream(e)] : ")
       this.remoteVideoref.current.srcObject = e.stream
     }
 
@@ -122,47 +121,48 @@ class App extends Component {
       .catch(failure)
   }
 
-  // sendToPeer = (messageType, payload) => {
-  //   this.socket.emit(messageType, {
-  //     socketID: this.socket.id,
-  //     payload
-  //   })
-  // }
+  sendToPeer = (messageType, payload) => {
+    this.socket.emit(messageType, {
+      socketID: this.socket.id,
+      payload
+    })
+  }
 
-  // /* ACTION METHODS FROM THE BUTTONS ON SCREEN */
+  /* ACTION METHODS FROM THE BUTTONS ON SCREEN */
 
   createOffer = () => {
-    console.log('Offer')
+    console.log('Offer clicked')
 
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/createOffer
     // initiates the creation of SDP
     this.pc.createOffer({ offerToReceiveVideo: 1 })
       .then(sdp => {
-        console.log(JSON.stringify(sdp))
+        // console.log(JSON.stringify(sdp))
 
         // set offer sdp as local description
         this.pc.setLocalDescription(sdp)
 
-        // this.sendToPeer('offerOrAnswer', sdp)
-      })
+        this.sendToPeer('offerOrAnswer', sdp)
+    })
   }
 
   // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/createAnswer
   // creates an SDP answer to an offer received from remote peer
   createAnswer = () => {
-    console.log('Answer')
+    console.log('Answer clicked')
     this.pc.createAnswer({ offerToReceiveVideo: 1 })
       .then(sdp => {
-        console.log(JSON.stringify(sdp))
+        //console.log(JSON.stringify(sdp))
 
         // set answer sdp as local description
         this.pc.setLocalDescription(sdp)
 
-        // this.sendToPeer('offerOrAnswer', sdp)
-      })
+        this.sendToPeer('offerOrAnswer', sdp)
+    })
   }
 
   setRemoteDescription = () => {
+    console.log('Set Remote Desc clicked')
     // retrieve and parse the SDP copied from the remote peer
     const desc = JSON.parse(this.textref.value)
 
@@ -171,17 +171,19 @@ class App extends Component {
   }
 
   addCandidate = () => {
+    console.log('Add Candidate clicked')
     // retrieve and parse the Candidate copied from the remote peer
-    const candidate = JSON.parse(this.textref.value)
-    console.log('Adding candidate:', candidate)
+    // const candidate = JSON.parse(this.textref.value)
+    // console.log('Adding candidate:', candidate)
 
     // add the candidate to the peer connection
-    this.pc.addIceCandidate(new RTCIceCandidate(candidate))
+    // this.pc.addIceCandidate(new RTCIceCandidate(candidate))
 
-    // this.candidates.forEach(candidate => {
-    //   console.log(JSON.stringify(candidate))
-    //   this.pc.addIceCandidate(new RTCIceCandidate(candidate))
-    // });
+    this.candidates.forEach(candidate => {
+      // const candidateString = JSON.stringify(candidate)
+      console.log(`Client [this.pc.addIceCandidate(new RTCIceCandidate(candidate))] \n\tadd the candidate to the peer connection: `)
+      this.pc.addIceCandidate(new RTCIceCandidate(candidate))
+    });
   }
 
   render() {
@@ -195,7 +197,7 @@ class App extends Component {
             margin: 5,
             backgroundColor: 'black'
           }}
-          ref={this.localVideoref}
+          ref={ this.localVideoref }
           autoPlay>
         </video>
         <video
@@ -205,7 +207,7 @@ class App extends Component {
             margin: 5,
             backgroundColor: 'black'
           }}
-          ref={this.remoteVideoref}
+          ref={ this.remoteVideoref }
           autoPlay>
         </video>
         <br />
@@ -214,7 +216,7 @@ class App extends Component {
         <button onClick={this.createAnswer}>Answer</button>
 
         <br />
-        <textarea style={{ width: 450, height: 40 }} ref={ref => { this.textref = ref }} />
+        <textarea style={{ width: 450, height:40 }} ref={ref => { this.textref = ref }} />
 
         <br />
         <button onClick={this.setRemoteDescription}>Set Remote Desc</button>

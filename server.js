@@ -9,7 +9,7 @@ var io = require('socket.io')
 const app = express()
 const port = 8080
 
-// app.get('/', (req, res) => res.send('Hello World!!!!!'))
+//app.get('/', (req, res) => res.send('Hello World!!!!!'))
 
 //https://expressjs.com/en/guide/writing-middleware.html
 app.use(express.static(__dirname + '/build'))
@@ -29,33 +29,50 @@ let connectedPeers = new Map()
 
 peers.on('connection', socket => {
 
-  console.log(socket.id)
+  // convenience function to log server messages on the client
+  function log() {
+    var array = ['Message from server:'];
+    array.push.apply(array, arguments);
+    socket.emit('log', array);
+  }
+
+  log(`Server created socket with socketID: ${socket.id}`);
+  console.log(`Server created socket with socketID: ${socket.id}`);
+
   socket.emit('connection-success', { success: socket.id })
 
   connectedPeers.set(socket.id, socket)
 
   socket.on('disconnect', () => {
-    console.log('disconnected')
+    log(`${socket.id} disconnected`)
+    console.log(`${socket.id} disconnected`)
     connectedPeers.delete(socket.id)
   })
 
   socket.on('offerOrAnswer', (data) => {
+    log(`${socket.id} said: offerOrAnswer`)
+    console.log(`${socket.id} said: offerOrAnswer`)
     // send to the other peer(s) if any
     for (const [socketID, socket] of connectedPeers.entries()) {
       // don't send to self
       if (socketID !== data.socketID) {
-        console.log(socketID, data.payload.type)
+        log(`Signaling Server sent offerOrAnswer to ${socketID} with data.payload.type: ${data.payload.type}`)
+        console.log(`Signaling Server sent offerOrAnswer to ${socketID} with data.payload.type: ${data.payload.type}`)
         socket.emit('offerOrAnswer', data.payload)
       }
     }
   })
 
   socket.on('candidate', (data) => {
+    log(`${socket.id} said: candidate`)
+    console.log(`${socket.id} said: candidate`)
+
     // send candidate to the other peer(s) if any
     for (const [socketID, socket] of connectedPeers.entries()) {
       // don't send to self
       if (socketID !== data.socketID) {
-        console.log(socketID, data.payload)
+        log(`Signaling Server sent candidate to ${socketID} with data.payload: ${data.payload}`)
+        console.log(`Signaling Server sent candidate to ${socketID} with data.payload: ${data.payload}`)
         socket.emit('candidate', data.payload)
       }
     }
