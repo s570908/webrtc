@@ -44,3 +44,6 @@ Limitation !
 1. 두 peer가 동일 local area network에 있을 경우만 동작한다.
 
 Part 3-1 에서 수정할 예정
+
+## Part 3-1 Bug fixed and Limitation fixed
+버그를 수정하였고, Limitation이 없도록 보강하였다.

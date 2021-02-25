@@ -24,7 +24,7 @@ class App extends Component {
       }
     )
 
-    this.socket.on('log', function(array) {
+    this.socket.on('log', function (array) {
       console.log.apply(console, array);
     });
 
@@ -33,34 +33,34 @@ class App extends Component {
     })
 
     this.socket.on('offerOrAnswer', (sdp) => {
-      this.textref.value = JSON.stringify(sdp)
+      console.log('A sdp is received and written to textarea')
 
-      // set sdp as remote description
-      console.log('sdp is received and set to pc-RemoteDescription')
-      this.pc.setRemoteDescription(new RTCSessionDescription(sdp))
+      this.textref.value = JSON.stringify(sdp)
     })
 
     this.socket.on('candidate', (candidate) => {
       // console.log('From Peer... ', JSON.stringify(candidate))
-      // this.candidates = [...this.candidates, candidate]
-      console.log('candidate is received and added to pc-IceCandidate')
-      this.pc.addIceCandidate(new RTCIceCandidate(candidate))
+      console.log('A candidate is received and added to candidates[...]')
+
+      this.candidates = [...this.candidates, candidate]
+
+      //this.pc.addIceCandidate(new RTCIceCandidate(candidate))
     })
 
-    const pc_config = null
+    //const pc_config = null
 
-    // const pc_config = {
-    //   "iceServers": [
-    //     // {
-    //     //   urls: 'stun:[STUN_IP]:[PORT]',
-    //     //   'credentials': '[YOR CREDENTIALS]',
-    //     //   'username': '[USERNAME]'
-    //     // },
-    //     {
-    //       urls : 'stun:stun.l.google.com:19302'
-    //     }
-    //   ]
-    // }
+    const pc_config = {
+      "iceServers": [
+        // {
+        //   urls: 'stun:[STUN_IP]:[PORT]',
+        //   'credentials': '[YOR CREDENTIALS]',
+        //   'username': '[USERNAME]'
+        // },
+        {
+          urls : 'stun:stun.l.google.com:19302'
+        }
+      ]
+    }
 
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection
     // create an instance of RTCPeerConnection
@@ -68,23 +68,24 @@ class App extends Component {
 
     // triggered when a new candidate is returned
     this.pc.onicecandidate = (e) => {
-      console.log(" A new candidate is triggered and returned to Client Handler [this.pc.onicecandidate(e)] : ")
+      
       // send the candidates to the remote peer
       // see addCandidate below to be triggered on the remote peer
       if (e.candidate) {
         //console.log(JSON.stringify(e.candidate))
+        console.log(`A new candidate ${JSON.stringify(e.candidate)} is triggered`)
         this.sendToPeer('candidate', e.candidate)
       }
     }
 
     // triggered when there is a change in connection state
     this.pc.oniceconnectionstatechange = (e) => {
-      console.log(" A change in connection state is triggered and returned to Client Handler [this.pc.oniceconnectionstatechange(e)] : ")
+      console.log(`A change ${e} in connection state is triggered`)
     }
 
     // triggered when a stream is added to pc, see below - this.pc.addStream(stream)
     this.pc.onaddstream = (e) => {
-      console.log(" A stream is added(triggered) to peer connection and returned to Client Handler [this.pc.onaddstream(e)] : ")
+      console.log(`A stream ${e} is added(triggered)`)
       this.remoteVideoref.current.srcObject = e.stream
     }
 
@@ -135,30 +136,43 @@ class App extends Component {
 
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/createOffer
     // initiates the creation of SDP
-    this.pc.createOffer({ offerToReceiveVideo: 1 })
+    this.pc.createOffer({ offerToReceiveVideo: 1 })                   // (1)
       .then(sdp => {
-        // console.log(JSON.stringify(sdp))
+        //console.log(`set sdp ${JSON.stringify(sdp)} to pc.localDescription`)
+        console.log(`set sdp to pc.localDescription`)
 
         // set offer sdp as local description
-        this.pc.setLocalDescription(sdp)
-
-        this.sendToPeer('offerOrAnswer', sdp)
-    })
+        return this.pc.setLocalDescription(sdp)                       //  (2)
+      })
+      .then(() => {
+        //console.log(`check if sdp is the same: pc.localDescription - ${JSON.stringify(this.pc.localDescription)}`)
+        this.sendToPeer('offerOrAnswer', this.pc.localDescription)    // (3),   (1) 과 (2) 과 (3)의 수행 순서가 보장되어야 한다.
+      })
+      .catch(
+        (error) => { this.logError(error) }
+      )
   }
 
   // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/createAnswer
   // creates an SDP answer to an offer received from remote peer
   createAnswer = () => {
     console.log('Answer clicked')
-    this.pc.createAnswer({ offerToReceiveVideo: 1 })
+    this.pc.createAnswer({ offerToReceiveVideo: 1 })              // (1)
       .then(sdp => {
-        //console.log(JSON.stringify(sdp))
+        //console.log(`set sdp - ${JSON.stringify(sdp)} to pc.localDescription`)
+        console.log(`set sdp to pc.localDescription`)
 
         // set answer sdp as local description
-        this.pc.setLocalDescription(sdp)
-
-        this.sendToPeer('offerOrAnswer', sdp)
-    })
+        return this.pc.setLocalDescription(sdp)                     // (2)
+      })
+      .then(() => {
+        //console.log(`check if sdp is the same: pc.localDescription - ${JSON.stringify(this.pc.localDescription)}`)
+        this.sendToPeer('offerOrAnswer', this.pc.localDescription)  // (3),   (1) 과 (2) 과 (3)의 수행 순서가 보장되어야 한다.
+      })
+      .catch(
+        (error) => {
+          this.logError(error)
+        })
   }
 
   setRemoteDescription = () => {
@@ -166,8 +180,9 @@ class App extends Component {
     // retrieve and parse the SDP copied from the remote peer
     const desc = JSON.parse(this.textref.value)
 
+    console.log(`desc (sdp) in text area start to be set to pc.remoteDescription `)
     // set sdp as remote description
-    this.pc.setRemoteDescription(new RTCSessionDescription(desc))
+    this.pc.setRemoteDescription(new RTCSessionDescription(desc), (error) => this.logError(error))
   }
 
   addCandidate = () => {
@@ -186,6 +201,15 @@ class App extends Component {
     });
   }
 
+  logError = (err) => {
+    if (!err) return;
+    if (typeof err === 'string') {
+      console.warn(err);
+    } else {
+      console.warn(err.toString(), err);
+    }
+  }
+
   render() {
 
     return (
@@ -197,7 +221,7 @@ class App extends Component {
             margin: 5,
             backgroundColor: 'black'
           }}
-          ref={ this.localVideoref }
+          ref={this.localVideoref}
           autoPlay>
         </video>
         <video
@@ -207,7 +231,7 @@ class App extends Component {
             margin: 5,
             backgroundColor: 'black'
           }}
-          ref={ this.remoteVideoref }
+          ref={this.remoteVideoref}
           autoPlay>
         </video>
         <br />
@@ -216,7 +240,7 @@ class App extends Component {
         <button onClick={this.createAnswer}>Answer</button>
 
         <br />
-        <textarea style={{ width: 450, height:40 }} ref={ref => { this.textref = ref }} />
+        <textarea style={{ width: 450, height: 40 }} ref={ref => { this.textref = ref }} />
 
         <br />
         <button onClick={this.setRemoteDescription}>Set Remote Desc</button>
