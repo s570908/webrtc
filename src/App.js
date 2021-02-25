@@ -11,7 +11,7 @@ class App extends Component {
     this.remoteVideoref = React.createRef()
 
     this.socket = null
-    this.candidates = []
+    // this.candidates = []
   }
 
   componentDidMount = () => {
@@ -34,17 +34,21 @@ class App extends Component {
 
     this.socket.on('offerOrAnswer', (sdp) => {
       console.log('A sdp is received and written to textarea')
-
       this.textref.value = JSON.stringify(sdp)
+
+      console.log(`A sdp starts to be set to pc.remoteDescription `)
+      // set sdp as remote description
+      this.pc.setRemoteDescription(new RTCSessionDescription(sdp), (error) => this.logError(error))
     })
 
     this.socket.on('candidate', (candidate) => {
       // console.log('From Peer... ', JSON.stringify(candidate))
-      console.log('A candidate is received and added to candidates[...]')
+      // console.log('A candidate is received and added to candidates[...]')
 
-      this.candidates = [...this.candidates, candidate]
+      // this.candidates = [...this.candidates, candidate]
 
-      //this.pc.addIceCandidate(new RTCIceCandidate(candidate))
+      console.log(`Client [this.pc.addIceCandidate(new RTCIceCandidate(candidate))] \n\tadd the candidate to the peer connection: `)
+      this.pc.addIceCandidate(new RTCIceCandidate(candidate))
     })
 
     //const pc_config = null
@@ -175,7 +179,7 @@ class App extends Component {
         })
   }
 
-  setRemoteDescription = () => {
+/*   setRemoteDescription = () => {
     console.log('Set Remote Desc clicked')
     // retrieve and parse the SDP copied from the remote peer
     const desc = JSON.parse(this.textref.value)
@@ -199,7 +203,7 @@ class App extends Component {
       console.log(`Client [this.pc.addIceCandidate(new RTCIceCandidate(candidate))] \n\tadd the candidate to the peer connection: `)
       this.pc.addIceCandidate(new RTCIceCandidate(candidate))
     });
-  }
+  } */
 
   logError = (err) => {
     if (!err) return;
@@ -242,9 +246,9 @@ class App extends Component {
         <br />
         <textarea style={{ width: 450, height: 40 }} ref={ref => { this.textref = ref }} />
 
-        <br />
+        {/* <br />
         <button onClick={this.setRemoteDescription}>Set Remote Desc</button>
-        <button onClick={this.addCandidate}>Add Candidate</button>
+        <button onClick={this.addCandidate}>Add Candidate</button> */}
       </div>
     )
   }
