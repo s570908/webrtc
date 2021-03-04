@@ -10,11 +10,12 @@ class App extends Component {
 
     this.state = {
       localStream: null,
+      remoteStream: null,
     }
 
     // https://reactjs.org/docs/refs-and-the-dom.html
     //this.localVideoref = React.createRef()
-    this.remoteVideoref = React.createRef()
+    //this.remoteVideoref = React.createRef()
 
     this.socket = null
     // this.candidates = []
@@ -96,7 +97,10 @@ class App extends Component {
     // triggered when a stream is added to pc, see below - this.pc.addStream(stream)
     this.pc.onaddstream = (e) => {
       console.log(`A stream ${e} is added(triggered)`)
-      this.remoteVideoref.current.srcObject = e.stream
+      //this.remoteVideoref.current.srcObject = e.stream
+      this.setState({
+        remoteStream: e.stream,
+      })
     }
 
     // called when getUserMedia() successfully returns - see below
@@ -241,7 +245,7 @@ class App extends Component {
           videoStream={this.state.localStream}
           autoPlay muted>
         </Video>
-        <video
+        <Video
           style={{
             zIndex: 1,
             position: 'fixed',
@@ -250,9 +254,10 @@ class App extends Component {
             minHeight: '100%',
             backgroundColor: 'black'
           }}
-          ref={this.remoteVideoref}
+          //ref={this.remoteVideoref}
+          videoStream={this.state.remoteStream}
           autoPlay>
-        </video>
+        </Video>
         <br />
         
         <div style={{zIndex: 1, position: 'fixed'}} >
