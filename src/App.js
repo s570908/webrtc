@@ -2,12 +2,18 @@ import React, { Component } from 'react';
 
 import io from 'socket.io-client'
 
+import Video from './components/video'
+
 class App extends Component {
   constructor(props) {
     super(props)
 
+    this.state = {
+      localStream: null,
+    }
+
     // https://reactjs.org/docs/refs-and-the-dom.html
-    this.localVideoref = React.createRef()
+    //this.localVideoref = React.createRef()
     this.remoteVideoref = React.createRef()
 
     this.socket = null
@@ -97,7 +103,10 @@ class App extends Component {
     // getUserMedia() returns a MediaStream object (https://developer.mozilla.org/en-US/docs/Web/API/MediaStream)
     const success = (stream) => {
       window.localStream = stream
-      this.localVideoref.current.srcObject = stream
+      //this.localVideoref.current.srcObject = stream
+      this.setState({
+        localStream: stream
+      })
       this.pc.addStream(stream)
     }
 
@@ -218,19 +227,20 @@ class App extends Component {
 
     return (
       <div>
-        <video
-          style={{
+        <Video
+          videoStyles={{
             zIndex:2,
             position: 'absolute',
             right:0,
-            width: 240,
-            height: 240,
+            width: 200,
+            height: 200,
             margin: 5,
             backgroundColor: 'black'
           }}
-          ref={this.localVideoref}
-          autoPlay>
-        </video>
+          // ref={this.localVideoref}
+          videoStream={this.state.localStream}
+          autoPlay muted>
+        </Video>
         <video
           style={{
             zIndex: 1,
