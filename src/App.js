@@ -17,9 +17,9 @@ class App extends Component {
   componentDidMount = () => {
 
     this.socket = io(
-      '/webrtcPeer',   // namespace
+      'https://ccfde83ee14b.ngrok.io/webrtcPeer',   // namespace
       {
-        path: '/webrtc',
+        path: '/io/webrtc',
         query: {}
       }
     )
@@ -220,6 +220,9 @@ class App extends Component {
       <div>
         <video
           style={{
+            zIndex:2,
+            position: 'absolute',
+            right:0,
             width: 240,
             height: 240,
             margin: 5,
@@ -230,21 +233,25 @@ class App extends Component {
         </video>
         <video
           style={{
-            width: 240,
-            height: 240,
-            margin: 5,
+            zIndex: 1,
+            position: 'fixed',
+            bottom: 0,
+            minWidth: '100%',
+            minHeight: '100%',
             backgroundColor: 'black'
           }}
           ref={this.remoteVideoref}
           autoPlay>
         </video>
         <br />
+        
+        <div style={{zIndex: 1, position: 'fixed'}} >
+          <button onClick={this.createOffer}>Offer</button>
+          <button onClick={this.createAnswer}>Answer</button>
 
-        <button onClick={this.createOffer}>Offer</button>
-        <button onClick={this.createAnswer}>Answer</button>
-
-        <br />
-        <textarea style={{ width: 450, height: 40 }} ref={ref => { this.textref = ref }} />
+          <br />
+          <textarea style={{ width: 450, height:40 }} ref={ref => { this.textref = ref }} />
+        </div> 
 
         {/* <br />
         <button onClick={this.setRemoteDescription}>Set Remote Desc</button>

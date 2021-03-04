@@ -3,7 +3,7 @@ const express = require('express')
 
 var io = require('socket.io')
 ({
-  path: '/webrtc'
+  path: '/io/webrtc'
 })
 
 const app = express()
