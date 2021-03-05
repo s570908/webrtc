@@ -53,3 +53,5 @@ Offer and Answer Buttons 만 남기고 다른 버튼은 제거하였다.
 Add Candidate 버튼과 Set Remote Desc을 제거하여, 자동화하였다. 
 즉 메시지를 시그널서버로부터 받으면 해당 태스크가 자동으로 수행되도록 
 수정하였다.  
+
+dotenv@8.2.0 은 작동하지 않는다. dotenv@8.0.0은 잘된다.

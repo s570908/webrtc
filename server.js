@@ -49,6 +49,17 @@ peers.on('connection', socket => {
     connectedPeers.delete(socket.id)
   })
 
+  socket.on('onlinePeers', (data) => {
+    for (const [socketID, _socket] of connectedPeers.entries()) {
+      // don't send to self
+      if (socketID !== data.socketID.local) {
+        log('online-peer', data.socketID, socketID)
+        console.log('online-peer', data.socketID, socketID)
+        socket.emit('online-peer', socketID)
+      }
+    }
+  })
+
   socket.on('offerOrAnswer', (data) => {
     log(`${socket.id} said: offerOrAnswer`)
     console.log(`${socket.id} said: offerOrAnswer`)

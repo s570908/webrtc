@@ -4,6 +4,11 @@ import io from 'socket.io-client'
 
 import Video from './components/video'
 
+import dotenv from 'dotenv';
+dotenv.config();
+
+console.log("process.env.REACT_APP_WEBSERVER_URL: ", process.env.REACT_APP_WEBSERVER_URL);
+
 class App extends Component {
   constructor(props) {
     super(props)
@@ -11,7 +16,31 @@ class App extends Component {
     this.state = {
       localStream: null,
       remoteStream: null,
+
+      pc_config: {
+        "iceServers": [
+          // {
+          //   urls: 'stun:[STUN_IP]:[PORT]',
+          //   'credentials': '[YOR CREDENTIALS]',
+          //   'username': '[USERNAME]'
+          // },
+          {
+            urls : 'stun:stun.l.google.com:19302'
+          }
+        ]
+      },
+
+      sdpConstraints: {
+        'mandatory': {
+            'OfferToReceiveAudio': true,
+            'OfferToReceiveVideo': true
+        }
+      },
+
     }
+
+    this.serviceIP = process.env.REACT_APP_WEBSERVER_URL;
+    //this.serviceIP = 'https://03ebef4bea8d.ngrok.io/webrtcPeer'
 
     // https://reactjs.org/docs/refs-and-the-dom.html
     //this.localVideoref = React.createRef()
@@ -21,10 +50,64 @@ class App extends Component {
     // this.candidates = []
   }
 
+  getLocalStream = ()=>{
+       // called when getUserMedia() successfully returns - see below
+    // getUserMedia() returns a MediaStream object (https://developer.mozilla.org/en-US/docs/Web/API/MediaStream)
+    const success = (stream) => {
+      window.localStream = stream
+      //this.localVideoref.current.srcObject = stream
+      this.setState({
+        localStream: stream
+      })
+
+      this.whoisOnline()
+      this.pc.addStream(stream)
+    }
+
+    // called when getUserMedia() fails - see below
+    const failure = (e) => {
+      console.log('getUserMedia Error: ', e)
+    }
+
+    // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
+    // see the above link for more constraint options
+    const constraints = {
+      audio: false,
+      video: true,
+      // video: {
+      //   width: 1280,
+      //   height: 720
+      // },
+      // video: {
+      //   width: { min: 1280 },
+      // }
+    }
+
+    // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
+    navigator.mediaDevices.getUserMedia(constraints)
+      .then(success)
+      .catch(failure)
+
+  }
+
+  whoisOnline = () => {
+    // let all peers know I am joining
+    this.sendToPeerNew('onlinePeers', null, {local: this.socket.id})
+  }
+
+  sendToPeerNew = (messageType, payload, socketID) => {
+    this.socket.emit(messageType, {
+      socketID,
+      payload
+    })
+  }
+
   componentDidMount = () => {
 
+    this.getLocalStream()
+ 
     this.socket = io.connect(
-      'https://03ebef4bea8d.ngrok.io/webrtcPeer',   // namespace
+      this.serviceIP,   // namespace
       {
         path: '/io/webrtc',
         query: {}
@@ -60,22 +143,22 @@ class App extends Component {
 
     //const pc_config = null
 
-    const pc_config = {
-      "iceServers": [
-        // {
-        //   urls: 'stun:[STUN_IP]:[PORT]',
-        //   'credentials': '[YOR CREDENTIALS]',
-        //   'username': '[USERNAME]'
-        // },
-        {
-          urls : 'stun:stun.l.google.com:19302'
-        }
-      ]
-    }
+    // const pc_config = {
+    //   "iceServers": [
+    //     // {
+    //     //   urls: 'stun:[STUN_IP]:[PORT]',
+    //     //   'credentials': '[YOR CREDENTIALS]',
+    //     //   'username': '[USERNAME]'
+    //     // },
+    //     {
+    //       urls : 'stun:stun.l.google.com:19302'
+    //     }
+    //   ]
+    // }
 
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection
     // create an instance of RTCPeerConnection
-    this.pc = new RTCPeerConnection(pc_config)
+    this.pc = new RTCPeerConnection(this.state.pc_config)
 
     // triggered when a new candidate is returned
     this.pc.onicecandidate = (e) => {
@@ -112,41 +195,6 @@ class App extends Component {
         remoteStream: e.streams[0],
       })
     }
-
-    // called when getUserMedia() successfully returns - see below
-    // getUserMedia() returns a MediaStream object (https://developer.mozilla.org/en-US/docs/Web/API/MediaStream)
-    const success = (stream) => {
-      window.localStream = stream
-      //this.localVideoref.current.srcObject = stream
-      this.setState({
-        localStream: stream
-      })
-      this.pc.addStream(stream)
-    }
-
-    // called when getUserMedia() fails - see below
-    const failure = (e) => {
-      console.log('getUserMedia Error: ', e)
-    }
-
-    // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
-    // see the above link for more constraint options
-    const constraints = {
-      audio: false,
-      video: true,
-      // video: {
-      //   width: 1280,
-      //   height: 720
-      // },
-      // video: {
-      //   width: { min: 1280 },
-      // }
-    }
-
-    // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
-    navigator.mediaDevices.getUserMedia(constraints)
-      .then(success)
-      .catch(failure)
   }
 
   sendToPeer = (messageType, payload) => {
@@ -163,7 +211,7 @@ class App extends Component {
 
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/createOffer
     // initiates the creation of SDP
-    this.pc.createOffer({ offerToReceiveVideo: 1 })                   // (1)
+    this.pc.createOffer(this.state.sdpConstraints)                   // (1)
       .then(sdp => {
         //console.log(`set sdp ${JSON.stringify(sdp)} to pc.localDescription`)
         console.log(`set sdp to pc.localDescription`)
@@ -184,7 +232,7 @@ class App extends Component {
   // creates an SDP answer to an offer received from remote peer
   createAnswer = () => {
     console.log('Answer clicked')
-    this.pc.createAnswer({ offerToReceiveVideo: 1 })              // (1)
+    this.pc.createAnswer(this.state.sdpConstraints)              // (1)
       .then(sdp => {
         //console.log(`set sdp - ${JSON.stringify(sdp)} to pc.localDescription`)
         console.log(`set sdp to pc.localDescription`)
