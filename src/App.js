@@ -23,8 +23,8 @@ class App extends Component {
 
   componentDidMount = () => {
 
-    this.socket = io(
-      'https://ccfde83ee14b.ngrok.io/webrtcPeer',   // namespace
+    this.socket = io.connect(
+      'https://03ebef4bea8d.ngrok.io/webrtcPeer',   // namespace
       {
         path: '/io/webrtc',
         query: {}
@@ -95,11 +95,21 @@ class App extends Component {
     }
 
     // triggered when a stream is added to pc, see below - this.pc.addStream(stream)
-    this.pc.onaddstream = (e) => {
-      console.log(`A stream ${e} is added(triggered)`)
-      //this.remoteVideoref.current.srcObject = e.stream
+    // this.pc.onaddstream = (e) => {
+    //   console.log(`A stream ${e} is added(triggered)`)
+    //   //this.remoteVideoref.current.srcObject = e.stream
+    //   this.setState({
+    //     remoteStream: e.stream,
+    //   })
+    // }
+
+    this.pc.ontrack = (e) => {
+      debugger
+      console.log(`An ontrack event ${e} is added(triggered) on track: `, e)
+      console.log(`--- A stream[0] ${e.streams[0]}`, e.streams[0])
+      //this.remoteVideoref.current.srcObject = e.streams[0]
       this.setState({
-        remoteStream: e.stream,
+        remoteStream: e.streams[0],
       })
     }
 
@@ -246,7 +256,7 @@ class App extends Component {
           autoPlay muted>
         </Video>
         <Video
-          style={{
+          videoStyles={{
             zIndex: 1,
             position: 'fixed',
             bottom: 0,
@@ -265,7 +275,7 @@ class App extends Component {
           <button onClick={this.createAnswer}>Answer</button>
 
           <br />
-          <textarea style={{ width: 450, height:40 }} ref={ref => { this.textref = ref }} />
+          <textarea style={{ width: 200, height:40 }} ref={ref => { this.textref = ref }} />
         </div> 
 
         {/* <br />
