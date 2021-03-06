@@ -80,14 +80,14 @@ class App extends Component {
     // triggered when a stream is added to pc, see below - this.pc.addStream(stream)
     // this.pc.ontrack을 사용하면 remote stream이 나오지 않는다.
     // ontrack과 onaddstream의 차이는 무엇인가?
-    // this.pc.ontrack = (e) => {
-    //   this.remoteVideoref.current.srcObject = e.stream;
-    // }
+    this.pc.ontrack = (e) => {
+      this.remoteVideoref.current.srcObject = e.streams[0];  // e.streams[0] 으로 정확히 사용하면 동작한다.
+    }
 
     // triggered when a stream is added to pc, see below - this.pc.addStream(stream)
-    this.pc.onaddstream = (e) => {
-      this.remoteVideoref.current.srcObject = e.stream
-    }
+    // this.pc.onaddstream = (e) => {
+    //   this.remoteVideoref.current.srcObject = e.stream
+    // }
 
     // called when getUserMedia() successfully returns - see below
     // getUserMedia() returns a MediaStream object (https://developer.mozilla.org/en-US/docs/Web/API/MediaStream)
