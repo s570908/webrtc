@@ -8,7 +8,7 @@ import Videos from './components/videos'
 import dotenv from 'dotenv';
 dotenv.config();
 
-//console.log("process.env.REACT_APP_WEBSERVER_URL: ", process.env.REACT_APP_WEBSERVER_URL);
+console.log("process.env.REACT_APP_WEBSERVER_URL: ", process.env.REACT_APP_WEBSERVER_URL);
 
 class App extends Component {
   constructor(props) {
@@ -46,7 +46,7 @@ class App extends Component {
 
     }
 
-    this.serviceIP = `${process.env.REACT_APP_WEBSERVER_URL}/webrtcPeer`;
+    this.serviceIP = process.env.REACT_APP_WEBSERVER_URL;
     //this.serviceIP = 'https://03ebef4bea8d.ngrok.io/webrtcPeer'
 
     // https://reactjs.org/docs/refs-and-the-dom.html
@@ -205,7 +205,7 @@ class App extends Component {
 
       this.getLocalStream()
 
-      //console.log(data.success)
+      console.log(data.success)
       const status = data.peerCount > 1 ? `Total Connected Peers: ${data.peerCount}` : 'Waiting for other peers to connect'
 
       this.setState({
@@ -282,7 +282,7 @@ class App extends Component {
     this.socket.on('answer', data => {
       // get remote's peerConnection
       const pc = this.state.peerConnections[data.socketID]
-      //console.log(data.sdp)
+      console.log(data.sdp)
       pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(()=>{})
     })
 
@@ -387,7 +387,7 @@ class App extends Component {
 
   render() {
 
-    //console.log(this.state.localStream)
+    console.log(this.state.localStream)
 
     const statusText = <div style={{ color: 'yellow', padding: 5 }}>{this.state.status}</div>
 
