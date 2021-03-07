@@ -72,12 +72,12 @@ peers.on('connection', socket => {
   })
 
   socket.on('onlinePeers', (data) => {
-    for (const [socketID, _socket] of connectedPeers.entries()) {
+    for (const [socketIDConnected, _socketConnected] of connectedPeers.entries()) {
       // don't send to self: sender: data.socketID.local, every connected peer: socketID
-      if(socketID !== data.socketID.local) {  // for every connected peer who is not the sender
-        log('online-peer', data.socketID, socketID)
-        console.log('online-peer', data.socketID, socketID)
-        socket.emit('online-peer', socketID)  // connected peer의 정보를 하나씩 하나씩 보낸다.
+      if(socketIDConnected !== data.socketID.local) {  // for every connected peer who is not the sender
+        log('online-peer', data.socketID, socketIDConnected)
+        console.log('online-peer', data.socketID, socketIDConnected)
+        socket.emit('online-peer', socketIDConnected)  // connected peer의 정보를 하나씩 하나씩 보낸다.
       }
     }
   })
@@ -86,12 +86,12 @@ peers.on('connection', socket => {
     log(`${socket.id} said: offer`)
     console.log(`${socket.id} said: offer`)
     // send to the other peer(s) if any.  // sender: data.socketID.local. connected peer: socketID
-    for (const [socketID, socket] of connectedPeers.entries()) {
+    for (const [socketIDConnected, socketConnected] of connectedPeers.entries()) {
       // don't send to self
-      if (socketID === data.socketID.remote) {  // offer를 받을 상대, remote peer, 가 connected peer라면,
-        log(`Signaling Server sent offer to ${socketID} with data: {sdp: ${data.payload}, socketID: ${data.socketID.local}}`)
-        console.log(`Signaling Server sent offer to ${socketID} with data: {sdp: ${data.payload}, socketID: ${data.socketID.local}}`)
-        socket.emit('offer', {
+      if (socketIDConnected === data.socketID.remote) {  // offer를 받을 상대, remote peer, 가 connected peer라면,
+        log(`Signaling Server sent offer to ${socketIDConnected} with data: {sdp: ${data.payload}, socketID: ${data.socketID.local}}`)
+        console.log(`Signaling Server sent offer to ${socketIDConnected} with data: {sdp: ${data.payload}, socketID: ${data.socketID.local}}`)
+        socketConnected.emit('offer', {
           sdp: data.payload,
           socketID: data.socketID.local,
         })
@@ -103,12 +103,12 @@ peers.on('connection', socket => {
     log(`${socket.id} said: answer`)
     console.log(`${socket.id} said: answer`)
     // send to the other peer(s) if any.  // sender: data.socketID.local. connected peer: socketID
-    for (const [socketID, socket] of connectedPeers.entries()) {
+    for (const [socketIDConnected, socketConnected] of connectedPeers.entries()) {
       // don't send to self
-      if (socketID === data.socketID.remote) {  // answer를 받을 상대, remote peer, 가 connected peer라면,
-        log(`Signaling Server sent offer to ${socketID} with data: {sdp: ${data.payload}, socketID: ${data.socketID.local}}`)
-        console.log(`Signaling Server sent offer to ${socketID} with data: {sdp: ${data.payload}, socketID: ${data.socketID.local}}`)
-        socket.emit('answer', {
+      if (socketIDConnected === data.socketID.remote) {  // answer를 받을 상대, remote peer, 가 connected peer라면,
+        log(`Signaling Server sent offer to ${socketIDConnected} with data: {sdp: ${data.payload}, socketID: ${data.socketID.local}}`)
+        console.log(`Signaling Server sent offer to ${socketIDConnected} with data: {sdp: ${data.payload}, socketID: ${data.socketID.local}}`)
+        socketConnected.emit('answer', {
           sdp: data.payload,
           socketID: data.socketID.local,
         })
@@ -135,13 +135,13 @@ peers.on('connection', socket => {
     console.log(`${socket.id} said: candidate`)
 
     // send candidate to the other peer(s) if any
-    for (const [socketID, socket] of connectedPeers.entries()) {
+    for (const [socketIDConnected, socketConnected] of connectedPeers.entries()) {
       // don't send to self
       //console.log(`Signaling Server sent candidate to ${socketIDConnected} with data.payload: {candidate: ${data.payload}, socketID: ${data.scoketID.local}} `)
-      if (socketID === data.socketID.remote) {
+      if (socketIDConnected === data.socketID.remote) {
         //log(`Signaling Server sent candidate to ${socketIDConnected} with data.payload: {candidate: ${data.payload}, socketID: ${data.scoketID.local}} `)
         //console.log(`Signaling Server sent candidate to ${socketIDConnected} with data.payload: {candidate: ${data.payload}, socketID: ${data.scoketID.local}} `)
-        socket.emit('candidate', {
+        socketConnected.emit('candidate', {
           candidate: data.payload,
           socketID: data.socketID.local
         })

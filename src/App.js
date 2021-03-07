@@ -379,7 +379,7 @@ class App extends Component {
   }
 
   switchVideo = (_video) => {
-    console.log(_video)
+    console.log(`switchVideo main screen to clicked remoteVideo : `, _video)
     this.setState({
       selectedVideo: _video
     })
