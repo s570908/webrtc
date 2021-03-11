@@ -133,16 +133,14 @@ class App extends Component {
       }
 
       pc.oniceconnectionstatechange = (e) => {
-        if (pc.iceConnectionState === 'disconnected') {
-          const remoteVideos = this.state.remoteVideos.filter(video => video.id !== socketID)
+        // if (pc.iceConnectionState === 'disconnected') {
+        //   const remoteVideos = this.state.remoteVideos.filter(video => video.id !== socketID)
 
-          this.setState({
-            remoteStream: remoteVideos.length > 0 && remoteVideos[0].stream || null,
-          })
+        //   this.setState({
+        //      remoteStream: remoteVideos.length > 0 && remoteVideos[0].stream || null,
+        //  })
         }
-
-      }
-
+        
       pc.ontrack = (e) => {
         const remoteVideo = {
           id: socketID,
@@ -153,18 +151,18 @@ class App extends Component {
         this.setState(prevState => {
 
           // If we already have a stream in display let it stay the same, otherwise use the latest stream
-          // const remoteStream = prevState.remoteVideos.length > 0 ? {} : { remoteStream: e.streams[0] }
+          const remoteStreamObj = prevState.remoteVideos.length > 0 ? {} : { remoteStream: e.streams[0] }
 
           // get currently selected video
-          // let selectedVideo = prevState.remoteVideos.filter(stream => stream.id === prevState.selectedVideo.id)
+          let selectedVideoObj = prevState.remoteVideos.filter(stream => stream.id === prevState.selectedVideo.id)
           // if the video is still in the list, then do nothing, otherwise set to new video stream
-          // selectedVideo = selectedVideo.length ? {} : { selectedVideo: remoteVideo }
+          selectedVideoObj = selectedVideoObj.length ? {} : { selectedVideo: remoteVideo }
 
           return {
-            selectedVideo: remoteVideo,
-            //...selectedVideo,
-            remoteStream: e.streams[0],
-            //...remoteStream,
+            // selectedVideo: remoteVideo,
+            ...selectedVideoObj,
+            // remoteStream: e.streams[0],
+            ...remoteStreamObj,
             remoteVideos: [...prevState.remoteVideos, remoteVideo]
           }
         })
@@ -179,7 +177,6 @@ class App extends Component {
 
       // return pc
       callback(pc)
-
     } catch(e) {
       console.log('Something went wrong! pc not created!!', e)
       // return;
@@ -193,7 +190,9 @@ class App extends Component {
       this.serviceIP,   // namespace
       {
         path: '/io/webrtc',
-        query: {}
+        query: {
+           room: window.location.pathname,
+        }
       }
     )
 
@@ -205,11 +204,18 @@ class App extends Component {
 
       this.getLocalStream()
 
-      //console.log(data.success)
-      const status = data.peerCount > 1 ? `Total Connected Peers: ${data.peerCount}` : 'Waiting for other peers to connect'
+      console.log('connection-success: ', data.success);
+      const status = data.peerCount > 1 ? `Total Connected Peers to room ${window.location.pathname}: ${data.peerCount}` : 'Waiting for other peers to connect'
 
       this.setState({
         status: status
+      })
+    })
+
+    this.socket.on('joined-peers', data => {
+
+      this.setState({
+        status: data.peerCount > 1 ? `Total Connected Peers to room ${window.location.pathname}: ${data.peerCount}` : 'Waiting for other peers to connect'
       })
     })
 
@@ -220,12 +226,13 @@ class App extends Component {
 
       this.setState(prevState => {
         // check if disconnected peer is the selected video and if there still connected peers, then select the first
-        const selectedVideo = prevState.selectedVideo.id === data.socketID && remoteVideos.length ? { selectedVideo: remoteVideos[0] } : null
+        const selectedVideoObj = remoteVideos.length && prevState.selectedVideo.id === data.socketID ? { selectedVideo: remoteVideos[0] } : null
 
         return {
           // remoteStream: remoteVideos.length > 0 && remoteVideos[0].stream || null,
           remoteVideos,
-          ...selectedVideo,
+          ...selectedVideoObj,
+          status: data.peerCount > 1 ? `Total Connected Peers to room ${window.location.pathname}: ${data.peerCount}` : 'Waiting for other peers to connect'
         }
         }
       )
@@ -282,7 +289,7 @@ class App extends Component {
     this.socket.on('answer', data => {
       // get remote's peerConnection
       const pc = this.state.peerConnections[data.socketID]
-      //console.log(data.sdp)
+      console.log(data.sdp)
       pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(()=>{})
     })
 
@@ -387,7 +394,7 @@ class App extends Component {
 
   render() {
 
-    //console.log(this.state.localStream)
+    console.log(this.state.localStream)
 
     const statusText = <div style={{ color: 'yellow', padding: 5 }}>{this.state.status}</div>
 
