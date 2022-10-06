@@ -1,24 +1,21 @@
-import React, { Component } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 
 // import io from 'socket.io-client'
 
-class App extends Component {
-  constructor(props) {
-    super(props)
+function App() {
+  // https://reactjs.org/docs/refs-and-the-dom.html
+  const localVideoref = useRef();
+  const remoteVideoref = useRef();
+  const pcRef = useRef();
+  const textRef = useRef();
 
-    // https://reactjs.org/docs/refs-and-the-dom.html
-    this.localVideoref = React.createRef()
-    this.remoteVideoref = React.createRef()
+  // socket = null
+  const [candidates, setCandidates] = useState([]);
 
-    // this.socket = null
-    this.candidates = []
-  }
+  useEffect(() => {
+    console.log("Mounted");
 
-  componentDidMount = () => {
-
-    console.log('Mounted');
-
-    // this.socket = io(
+    // socket = io(
     //   '/webrtcPeer',   // namespace
     //   {
     //     path: '/webrtc',
@@ -26,24 +23,24 @@ class App extends Component {
     //   }
     // )
 
-    // this.socket.on('connection-success', success => {
+    // socket.on('connection-success', success => {
     //   console.log(success)
     // })
 
-    // this.socket.on('offerOrAnswer', (sdp) => {
-    //   this.textref.value = JSON.stringify(sdp)
+    // socket.on('offerOrAnswer', (sdp) => {
+    //   textRef.current.value = JSON.stringify(sdp)
 
     //   // set sdp as remote description
-    //   this.pc.setRemoteDescription(new RTCSessionDescription(sdp))
+    //   pcRef.current.setRemoteDescription(new RTCSessionDescription(sdp))
     // })
 
-    // this.socket.on('candidate', (candidate) => {
+    // socket.on('candidate', (candidate) => {
     //   // console.log('From Peer... ', JSON.stringify(candidate))
-    //   // this.candidates = [...this.candidates, candidate]
-    //   this.pc.addIceCandidate(new RTCIceCandidate(candidate))
+    //   // candidates = [...candidates, candidate]
+    //   pcRef.current.addIceCandidate(new RTCIceCandidate(candidate))
     // })
 
-    const pc_config = null
+    const pc_config = null;
 
     // const pc_config = {
     //   "iceServers": [
@@ -60,47 +57,47 @@ class App extends Component {
 
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection
     // create an instance of RTCPeerConnection
-    this.pc = new RTCPeerConnection(pc_config)
+    pcRef.current = new RTCPeerConnection(pc_config);
 
     // triggered when a new candidate is returned
-    this.pc.onicecandidate = (e) => {
+    pcRef.current.onicecandidate = (e) => {
       // send the candidates to the remote peer
       // see addCandidate below to be triggered on the remote peer
       if (e.candidate) {
-        console.log(JSON.stringify(e.candidate))
-        // this.sendToPeer('candidate', e.candidate)
+        console.log(JSON.stringify(e.candidate));
+        // sendToPeer('candidate', e.candidate)
       }
-    }
+    };
 
     // triggered when there is a change in connection state
-    this.pc.oniceconnectionstatechange = (e) => {
-      console.log(e)
-    }
+    pcRef.current.oniceconnectionstatechange = (e) => {
+      console.log(e);
+    };
 
-    // triggered when a stream is added to pc, see below - this.pc.addStream(stream)
-    // this.pc.ontrack을 사용하면 remote stream이 나오지 않는다.
+    // triggered when a stream is added to pc, see below - pcRef.current.addStream(stream)
+    // pcRef.current.onaddstream을 사용하면 remote stream이 나오지 않는다.
     // ontrack과 onaddstream의 차이는 무엇인가?
-    this.pc.ontrack = (e) => {
-      this.remoteVideoref.current.srcObject = e.streams[0];  // e.streams[0] 으로 정확히 사용하면 동작한다.
-    }
+    pcRef.current.ontrack = (e) => {
+      remoteVideoref.current.srcObject = e.streams[0]; // e.streams[0] 으로 정확히 사용하면 동작한다.
+    };
 
-    // triggered when a stream is added to pc, see below - this.pc.addStream(stream)
-    // this.pc.onaddstream = (e) => {
-    //   this.remoteVideoref.current.srcObject = e.stream
+    // triggered when a stream is added to pc, see below - pcRef.current.addStream(stream)
+    // pcRef.current.onaddstream = (e) => {
+    //   remoteVideoref.current.srcObject = e.stream
     // }
 
     // called when getUserMedia() successfully returns - see below
     // getUserMedia() returns a MediaStream object (https://developer.mozilla.org/en-US/docs/Web/API/MediaStream)
     const success = (stream) => {
-      window.localStream = stream
-      this.localVideoref.current.srcObject = stream
-      this.pc.addStream(stream)
-    }
+      window.localStream = stream;
+      localVideoref.current.srcObject = stream;
+      pcRef.current.addStream(stream);
+    };
 
     // called when getUserMedia() fails - see below
     const failure = (e) => {
-      console.log('getUserMedia Error: ', e)
-    }
+      console.log("getUserMedia Error: ", e);
+    };
 
     // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
     // see the above link for more constraint options
@@ -114,114 +111,107 @@ class App extends Component {
       // video: {
       //   width: { min: 1280 },
       // }
-    }
+    };
 
     // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
-    navigator.mediaDevices.getUserMedia(constraints)
-      .then(success)
-      .catch(failure)
-  }
+    navigator.mediaDevices.getUserMedia(constraints).then(success).catch(failure);
+  });
 
   // sendToPeer = (messageType, payload) => {
-  //   this.socket.emit(messageType, {
-  //     socketID: this.socket.id,
+  //   socket.emit(messageType, {
+  //     socketID: socket.id,
   //     payload
   //   })
   // }
 
   // /* ACTION METHODS FROM THE BUTTONS ON SCREEN */
 
-  createOffer = () => {
-    console.log('Offer')
+  const createOffer = () => {
+    console.log("Offer");
 
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/createOffer
     // initiates the creation of SDP
-    this.pc.createOffer({ offerToReceiveVideo: 1 })
-      .then(sdp => {
-        console.log(JSON.stringify(sdp))
+    pcRef.current.createOffer({ offerToReceiveVideo: 1 }).then((sdp) => {
+      console.log(JSON.stringify(sdp));
 
-        // set offer sdp as local description
-        this.pc.setLocalDescription(sdp)
+      // set offer sdp as local description
+      pcRef.current.setLocalDescription(sdp);
 
-        // this.sendToPeer('offerOrAnswer', sdp)
-      })
-  }
+      // sendToPeer('offerOrAnswer', sdp)
+    });
+  };
 
   // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/createAnswer
   // creates an SDP answer to an offer received from remote peer
-  createAnswer = () => {
-    console.log('Answer')
-    this.pc.createAnswer({ offerToReceiveVideo: 1 })
-      .then(sdp => {
-        console.log(JSON.stringify(sdp))
+  const createAnswer = () => {
+    console.log("Answer");
+    pcRef.current.createAnswer({ offerToReceiveVideo: 1 }).then((sdp) => {
+      console.log(JSON.stringify(sdp));
 
-        // set answer sdp as local description
-        this.pc.setLocalDescription(sdp)
+      // set answer sdp as local description
+      pcRef.current.setLocalDescription(sdp);
 
-        // this.sendToPeer('offerOrAnswer', sdp)
-      })
-  }
+      // sendToPeer('offerOrAnswer', sdp)
+    });
+  };
 
-  setRemoteDescription = () => {
+  const setRemoteDescription = () => {
     // retrieve and parse the SDP copied from the remote peer
-    const desc = JSON.parse(this.textref.value)
+    const desc = JSON.parse(textRef.current.value);
 
     // set sdp as remote description
-    this.pc.setRemoteDescription(new RTCSessionDescription(desc))
-  }
+    pcRef.current.setRemoteDescription(new RTCSessionDescription(desc));
+  };
 
-  addCandidate = () => {
+  const addCandidate = () => {
     // retrieve and parse the Candidate copied from the remote peer
-    const candidate = JSON.parse(this.textref.value)
-    console.log('Adding candidate:', candidate)
+    const candidate = JSON.parse(textRef.current.value);
+    console.log("Adding candidate:", candidate);
 
     // add the candidate to the peer connection
-    this.pc.addIceCandidate(new RTCIceCandidate(candidate))
+    pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
 
-    // this.candidates.forEach(candidate => {
+    // candidates.forEach(candidate => {
     //   console.log(JSON.stringify(candidate))
-    //   this.pc.addIceCandidate(new RTCIceCandidate(candidate))
+    //   pcRef.current.addIceCandidate(new RTCIceCandidate(candidate))
     // });
-  }
+  };
 
-  render() {
+  return (
+    <div>
+      <video
+        style={{
+          width: 240,
+          height: 240,
+          margin: 5,
+          backgroundColor: "black",
+        }}
+        ref={localVideoref}
+        autoPlay
+      ></video>
+      <video
+        style={{
+          width: 240,
+          height: 240,
+          margin: 5,
+          backgroundColor: "black",
+        }}
+        ref={remoteVideoref}
+        autoPlay
+      ></video>
+      <br />
 
-    return (
-      <div>
-        <video
-          style={{
-            width: 240,
-            height: 240,
-            margin: 5,
-            backgroundColor: 'black'
-          }}
-          ref={this.localVideoref}
-          autoPlay>
-        </video>
-        <video
-          style={{
-            width: 240,
-            height: 240,
-            margin: 5,
-            backgroundColor: 'black'
-          }}
-          ref={this.remoteVideoref}
-          autoPlay>
-        </video>
-        <br />
+      <button onClick={createOffer}>Offer</button>
+      <button onClick={createAnswer}>Answer</button>
 
-        <button onClick={this.createOffer}>Offer</button>
-        <button onClick={this.createAnswer}>Answer</button>
+      <br />
+      <textarea style={{ width: 450, height: 40 }} ref={textRef} />
 
-        <br />
-        <textarea style={{ width: 450, height: 40 }} ref={ref => { this.textref = ref }} />
-
-        <br />
-        <button onClick={this.setRemoteDescription}>Set Remote Desc</button>
-        <button onClick={this.addCandidate}>Add Candidate</button>
-      </div>
-    )
-  }
+      <br />
+      <button onClick={setRemoteDescription}>Set Remote Desc</button>
+      <button onClick={addCandidate}>Add Candidate</button>
+    </div>
+  );
 }
 
 export default App;
