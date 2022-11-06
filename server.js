@@ -26,6 +26,7 @@ const peers = io.of("/webrtcPeer");
 let connectedPeers = new Map();
 
 peers.on("connection", (socket) => {
+  console.log("query.token: ", socket.handshake.query.token);
   // convenience function to log server messages on the client
   function log() {
     var array = ["Message from server:"];

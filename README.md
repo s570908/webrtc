@@ -56,3 +56,37 @@ Part 3-1 에서 수정할 예정
 ## WebRTC 개발을 하기 위한 사전준비
 
 https://doublem.org/webrtc-story-01/
+
+## Using Web Sockets with Socket.io
+
+https://jcho42.medium.com/using-web-sockets-with-socket-io-b1bdbf490703
+
+##
+
+```js
+const app = require("express")();
+const http = require("http").createServer(app);
+const io = require("socket.io")(http, {
+  path: "/webrtc",
+});
+
+const PORT = 3000;
+
+app.get("/", function (req, res) {
+  res.sendFile(__dirname + "/public/index.html");
+});
+
+http.listen(PORT, function () {
+  console.log("listening on *:" + PORT);
+});
+
+const peers = io.of("/webrtcPeer");
+
+io.on("connection", function (socket) {
+  console.log("a user has connected!");
+});
+```
+
+## [socket.io] 사용할 Client API
+
+https://velog.io/@hyex/socket.io-%EC%82%AC%EC%9A%A9%ED%95%A0-Client-API

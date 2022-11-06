@@ -15,11 +15,15 @@ class App extends Component {
   }
 
   componentDidMount = () => {
+    const token = "TOKEN";
+
+    // 실제로 요청은 다음과 같은 형태이다.
+    // http://localhost:8080/webrtc/?token=TOKEN&EIO=3&transport=polling&t=OHDRWN8   확인요망
     this.socket = io(
-      "/webrtcPeer", // namespace
+      "/webrtcPeer", // namespace, "http://localhost:8080/webrtcPeer"
       {
         path: "/webrtc", // server의 path와 동일해야 한다.
-        query: {},
+        query: { token }, // server에서 client socket, socket.handshake.query.token에서 찾아 볼 수 있다.
       }
     );
 
