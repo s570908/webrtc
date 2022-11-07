@@ -90,3 +90,7 @@ io.on("connection", function (socket) {
 ## [socket.io] 사용할 Client API
 
 https://velog.io/@hyex/socket.io-%EC%82%AC%EC%9A%A9%ED%95%A0-Client-API
+
+## 서로 다른 종류의 browser끼리 peer connection을 맺기 위해서는 webrtc-adapter를 install 해야 한다. 그리고 서로 다른 종류의 두 개의 browser가 동일한 video/audio stream을 동시에 사용할 수 없다. 즉 현재 사용하고 있는 컴퓨터에서 chrome과 edge를 열고 webrtc로 peer connection을 시도하면 연결이 되지 않는다. 현재 컴퓨터 chrome/edge/fireFox와 다른 컴퓨터/모바일의 chrome/edge/fireFox를 사용하여 실험하여야 한다.
+
+https://github.com/webrtc/adapter
