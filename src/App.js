@@ -1,110 +1,110 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import io from 'socket.io-client'
+import io from "socket.io-client";
 
 class App extends Component {
   constructor(props) {
-    super(props)
+    super(props);
 
     // https://reactjs.org/docs/refs-and-the-dom.html
-    this.localVideoref = React.createRef()
-    this.remoteVideoref = React.createRef()
+    this.localVideoref = React.createRef();
+    this.remoteVideoref = React.createRef();
 
-    this.socket = null
+    this.socket = null;
     // this.candidates = []
   }
 
   componentDidMount = () => {
-
     this.socket = io(
-      'https://ccfde83ee14b.ngrok.io/webrtcPeer',   // namespace
+      "/webrtcPeer", // namespace
       {
-        path: '/io/webrtc',
-        query: {}
+        path: "/io/webrtc",
+        query: {},
       }
-    )
+    );
 
-    this.socket.on('log', function (array) {
+    this.socket.on("log", function (array) {
       console.log.apply(console, array);
     });
 
-    this.socket.on('connection-success', success => {
-      console.log(success)
-    })
+    this.socket.on("connection-success", (success) => {
+      console.log(success);
+    });
 
-    this.socket.on('offerOrAnswer', (sdp) => {
-      console.log('A sdp is received and written to textarea')
-      this.textref.value = JSON.stringify(sdp)
+    this.socket.on("offerOrAnswer", (sdp) => {
+      console.log("A sdp is received and written to textarea");
+      this.textref.value = JSON.stringify(sdp);
 
-      console.log(`A sdp starts to be set to pc.remoteDescription `)
+      console.log(`A sdp starts to be set to pc.remoteDescription `);
       // set sdp as remote description
-      this.pc.setRemoteDescription(new RTCSessionDescription(sdp), (error) => this.logError(error))
-    })
+      this.pc.setRemoteDescription(new RTCSessionDescription(sdp), (error) => this.logError(error));
+    });
 
-    this.socket.on('candidate', (candidate) => {
+    this.socket.on("candidate", (candidate) => {
       // console.log('From Peer... ', JSON.stringify(candidate))
       // console.log('A candidate is received and added to candidates[...]')
 
       // this.candidates = [...this.candidates, candidate]
 
-      console.log(`Client [this.pc.addIceCandidate(new RTCIceCandidate(candidate))] \n\tadd the candidate to the peer connection: `)
-      this.pc.addIceCandidate(new RTCIceCandidate(candidate))
-    })
+      console.log(
+        `Client [this.pc.addIceCandidate(new RTCIceCandidate(candidate))] \n\tadd the candidate to the peer connection: `
+      );
+      this.pc.addIceCandidate(new RTCIceCandidate(candidate));
+    });
 
     //const pc_config = null
 
     const pc_config = {
-      "iceServers": [
+      iceServers: [
         // {
         //   urls: 'stun:[STUN_IP]:[PORT]',
         //   'credentials': '[YOR CREDENTIALS]',
         //   'username': '[USERNAME]'
         // },
         {
-          urls : 'stun:stun.l.google.com:19302'
-        }
-      ]
-    }
+          urls: "stun:stun.l.google.com:19302",
+        },
+      ],
+    };
 
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection
     // create an instance of RTCPeerConnection
-    this.pc = new RTCPeerConnection(pc_config)
+    this.pc = new RTCPeerConnection(pc_config);
 
     // triggered when a new candidate is returned
     this.pc.onicecandidate = (e) => {
-      
       // send the candidates to the remote peer
       // see addCandidate below to be triggered on the remote peer
       if (e.candidate) {
         //console.log(JSON.stringify(e.candidate))
-        console.log(`A new candidate ${JSON.stringify(e.candidate)} is triggered`)
-        this.sendToPeer('candidate', e.candidate)
+        console.log(`A new candidate ${JSON.stringify(e.candidate)} is triggered`);
+        this.sendToPeer("candidate", e.candidate);
       }
-    }
+    };
 
     // triggered when there is a change in connection state
     this.pc.oniceconnectionstatechange = (e) => {
-      console.log(`A change ${e} in connection state is triggered`)
-    }
+      console.log(`A change ${e} in connection state is triggered`);
+    };
 
     // triggered when a stream is added to pc, see below - this.pc.addStream(stream)
     this.pc.onaddstream = (e) => {
-      console.log(`A stream ${e} is added(triggered)`)
-      this.remoteVideoref.current.srcObject = e.stream
-    }
+      console.log(`A stream ${e} is added(triggered)`);
+      this.remoteVideoref.current.srcObject = e.stream;
+    };
 
     // called when getUserMedia() successfully returns - see below
     // getUserMedia() returns a MediaStream object (https://developer.mozilla.org/en-US/docs/Web/API/MediaStream)
     const success = (stream) => {
-      window.localStream = stream
-      this.localVideoref.current.srcObject = stream
-      this.pc.addStream(stream)
-    }
+      window.localStream = stream;
+      this.localVideoref.current.srcObject = stream;
+      this.pc.addStream(stream);
+    };
 
     // called when getUserMedia() fails - see below
     const failure = (e) => {
-      console.log('getUserMedia Error: ', e)
-    }
+      console.log("getUserMedia Error: ", e);
+    };
 
     // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
     // see the above link for more constraint options
@@ -118,68 +118,67 @@ class App extends Component {
       // video: {
       //   width: { min: 1280 },
       // }
-    }
+    };
 
     // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
-    navigator.mediaDevices.getUserMedia(constraints)
-      .then(success)
-      .catch(failure)
-  }
+    navigator.mediaDevices.getUserMedia(constraints).then(success).catch(failure);
+  };
 
   sendToPeer = (messageType, payload) => {
     this.socket.emit(messageType, {
       socketID: this.socket.id,
-      payload
-    })
-  }
+      payload,
+    });
+  };
 
   /* ACTION METHODS FROM THE BUTTONS ON SCREEN */
 
   createOffer = () => {
-    console.log('Offer clicked')
+    console.log("Offer clicked");
 
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/createOffer
     // initiates the creation of SDP
-    this.pc.createOffer({ offerToReceiveVideo: 1 })                   // (1)
-      .then(sdp => {
+    this.pc
+      .createOffer({ offerToReceiveVideo: 1 }) // (1)
+      .then((sdp) => {
         //console.log(`set sdp ${JSON.stringify(sdp)} to pc.localDescription`)
-        console.log(`set sdp to pc.localDescription`)
+        console.log(`set sdp to pc.localDescription`);
 
         // set offer sdp as local description
-        return this.pc.setLocalDescription(sdp)                       //  (2)
+        return this.pc.setLocalDescription(sdp); //  (2)
       })
       .then(() => {
         //console.log(`check if sdp is the same: pc.localDescription - ${JSON.stringify(this.pc.localDescription)}`)
-        this.sendToPeer('offerOrAnswer', this.pc.localDescription)    // (3),   (1) 과 (2) 과 (3)의 수행 순서가 보장되어야 한다.
+        this.sendToPeer("offerOrAnswer", this.pc.localDescription); // (3),   (1) 과 (2) 과 (3)의 수행 순서가 보장되어야 한다.
       })
-      .catch(
-        (error) => { this.logError(error) }
-      )
-  }
+      .catch((error) => {
+        this.logError(error);
+      });
+  };
 
   // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/createAnswer
   // creates an SDP answer to an offer received from remote peer
   createAnswer = () => {
-    console.log('Answer clicked')
-    this.pc.createAnswer({ offerToReceiveVideo: 1 })              // (1)
-      .then(sdp => {
+    console.log("Answer clicked");
+    this.pc
+      .createAnswer({ offerToReceiveVideo: 1 }) // (1)
+      .then((sdp) => {
         //console.log(`set sdp - ${JSON.stringify(sdp)} to pc.localDescription`)
-        console.log(`set sdp to pc.localDescription`)
+        console.log(`set sdp to pc.localDescription`);
 
         // set answer sdp as local description
-        return this.pc.setLocalDescription(sdp)                     // (2)
+        return this.pc.setLocalDescription(sdp); // (2)
       })
       .then(() => {
         //console.log(`check if sdp is the same: pc.localDescription - ${JSON.stringify(this.pc.localDescription)}`)
-        this.sendToPeer('offerOrAnswer', this.pc.localDescription)  // (3),   (1) 과 (2) 과 (3)의 수행 순서가 보장되어야 한다.
+        this.sendToPeer("offerOrAnswer", this.pc.localDescription); // (3),   (1) 과 (2) 과 (3)의 수행 순서가 보장되어야 한다.
       })
-      .catch(
-        (error) => {
-          this.logError(error)
-        })
-  }
+      .catch((error) => {
+        this.logError(error);
+      });
+  };
 
-/*   setRemoteDescription = () => {
+  /*   setRemoteDescription = () => {
     console.log('Set Remote Desc clicked')
     // retrieve and parse the SDP copied from the remote peer
     const desc = JSON.parse(this.textref.value)
@@ -207,57 +206,61 @@ class App extends Component {
 
   logError = (err) => {
     if (!err) return;
-    if (typeof err === 'string') {
+    if (typeof err === "string") {
       console.warn(err);
     } else {
       console.warn(err.toString(), err);
     }
-  }
+  };
 
   render() {
-
     return (
       <div>
         <video
           style={{
-            zIndex:2,
-            position: 'absolute',
-            right:0,
+            zIndex: 2,
+            position: "absolute",
+            right: 0,
             width: 240,
             height: 240,
             margin: 5,
-            backgroundColor: 'black'
+            backgroundColor: "black",
           }}
           ref={this.localVideoref}
-          autoPlay>
-        </video>
+          autoPlay
+        ></video>
         <video
           style={{
             zIndex: 1,
-            position: 'fixed',
+            position: "fixed",
             bottom: 0,
-            minWidth: '100%',
-            minHeight: '100%',
-            backgroundColor: 'black'
+            minWidth: "100%",
+            minHeight: "100%",
+            backgroundColor: "black",
           }}
           ref={this.remoteVideoref}
-          autoPlay>
-        </video>
+          autoPlay
+        ></video>
         <br />
-        
-        <div style={{zIndex: 1, position: 'fixed'}} >
+
+        <div style={{ zIndex: 1, position: "fixed" }}>
           <button onClick={this.createOffer}>Offer</button>
           <button onClick={this.createAnswer}>Answer</button>
 
           <br />
-          <textarea style={{ width: 450, height:40 }} ref={ref => { this.textref = ref }} />
-        </div> 
+          <textarea
+            style={{ width: 450, height: 40 }}
+            ref={(ref) => {
+              this.textref = ref;
+            }}
+          />
+        </div>
 
         {/* <br />
         <button onClick={this.setRemoteDescription}>Set Remote Desc</button>
         <button onClick={this.addCandidate}>Add Candidate</button> */}
       </div>
-    )
+    );
   }
 }
 
